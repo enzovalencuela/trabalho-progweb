@@ -16,7 +16,7 @@ public class MercadoPagoService {
     private final UserRepository users;
     private final ProductRepository products;
     private final PaymentRepository payments;
-    @Value("${mercadopago.access-token:}")
+    @Value("${mercadopago.access-token:${MERCADO_PAGO_ACCESS_TOKEN:}}")
     String token;
 
     public MercadoPagoService(UserRepository u, ProductRepository pr, PaymentRepository p) {
@@ -32,7 +32,11 @@ public class MercadoPagoService {
             var req = http.method(org.springframework.http.HttpMethod.valueOf(method))
                     .uri("https://api.mercadopago.com" + path).header("Authorization", "Bearer " + token);
             return method.equals("GET") ? req.retrieve().body(Map.class) : req.body(body).retrieve().body(Map.class);
+        } catch (org.springframework.web.client.HttpClientErrorException e) {
+            org.slf4j.LoggerFactory.getLogger(MercadoPagoService.class).error("Mercado Pago Client Error: status={}, body={}", e.getStatusCode(), e.getResponseBodyAsString(), e);
+            throw new AppError("Falha na comunicacao com Mercado Pago: " + e.getResponseBodyAsString(), 502);
         } catch (Exception e) {
+            org.slf4j.LoggerFactory.getLogger(MercadoPagoService.class).error("Mercado Pago Exception: {}", e.getMessage(), e);
             throw new AppError("Falha na comunicacao com Mercado Pago.", 502);
         }
     }

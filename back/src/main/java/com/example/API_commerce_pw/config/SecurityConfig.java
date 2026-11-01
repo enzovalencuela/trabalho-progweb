@@ -30,6 +30,7 @@ public class SecurityConfig {
                     "/api/register", "/api/auth/register",
                     "/api/login", "/api/auth/login", "/api/google-login",
                     "/api/payments/webhook").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/payments/create").authenticated()
                 .requestMatchers(HttpMethod.GET, "/api/session").authenticated()
                 .anyRequest().authenticated())
             .exceptionHandling(errors -> errors.authenticationEntryPoint((request, response, exception) -> {
