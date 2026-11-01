@@ -1,0 +1,31 @@
+.button-google {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  margin-top: 35px;
+  padding: 12px;
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 0 5px rgba(104, 104, 104, 0.377);
+  background-image: radial-gradient(
+    circle at center,
+    #397cd3 0%,
+    var(--secondary) 70%
+  );
+  border-radius: 30px;
+  font-weight: 600;
+  transition: all;
+  animation-duration: 1s;
+
+  & img {
+    position: absolute;
+    left: 10px;
+  }
+}
+
+.button-google:hover {
+  transform: translateY(-0.1rem);
+  box-shadow: 0 0 5px rgba(57, 57, 57, 0.607);
+}

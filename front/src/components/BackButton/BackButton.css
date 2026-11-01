@@ -1,0 +1,21 @@
+.back-button {
+  background: none;
+  align-self: flex-start;
+  width: fit-content;
+  color: #333;
+  border: none;
+  padding: 14px 20px;
+  font-weight: 700;
+  text-decoration: none;
+  text-align: center;
+  border-radius: 8px;
+  transition:
+    transform 0.3s,
+    box-shadow 0.3s;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.back-button:hover {
+  opacity: 0.5;
+}

@@ -1,0 +1,48 @@
+.div-links {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: start;
+  gap: 10px;
+}
+
+.div-links h3 img {
+  display: none;
+}
+
+@media (max-width: 738px) {
+  .div-links {
+    width: 100%;
+    padding-inline: 16px;
+
+    p {
+      display: none;
+    }
+  }
+
+  .div-links.aberto p {
+    display: block;
+    text-align: start;
+    padding: 0px 30px;
+    cursor: pointer;
+  }
+
+  .div-links h3 {
+    justify-content: space-between;
+    padding: 16px 30px;
+    display: flex;
+    cursor: pointer;
+    border-block: 1px solid #dddddd;
+    width: 100%;
+  }
+
+  .div-links h3 img {
+    transition: transform 0.3s ease-in-out;
+    display: block;
+    width: 15px;
+  }
+
+  .div-links.aberto h3 img {
+    transform: rotate(180deg);
+  }
+}

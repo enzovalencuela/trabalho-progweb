@@ -1,0 +1,160 @@
+footer {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.footer1 {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  align-items: center;
+  gap: 65px;
+  background-color: #f5f5f5;
+  padding: 64px 130px;
+}
+
+.div-footer {
+  display: flex;
+  width: 100%;
+  flex-direction: row;
+  justify-content: space-around;
+  align-items: flex-start;
+}
+
+.div-logo-social {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 40px;
+}
+
+.div-logo-social .logo_marca img {
+  width: 220px;
+  height: auto;
+}
+
+.social-media {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 20px;
+}
+
+.social-media a {
+  width: auto;
+  color: #1e71ff;
+  font-size: 25px;
+  text-decoration: none;
+}
+
+.meios-pagamento {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 30px;
+  height: 24px;
+}
+
+.div-footer2 {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  padding: 40px 220px;
+}
+
+.div-footer2 p {
+  font-family: "Nunito Sans", sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 20px;
+  text-align: center;
+}
+
+.parceiros {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 40px;
+  height: 30px;
+}
+
+.logo {
+  height: 30px;
+  width: auto;
+}
+
+.vtex-logo {
+  height: 20px;
+}
+
+@media (max-width: 738px) {
+  .footer1 {
+    width: 100%;
+    padding: 20px 0;
+    gap: 30px;
+  }
+
+  .div-footer {
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .div-logo-social {
+    padding: 30px;
+  }
+
+  .div-logo-social .logo_marca img {
+    width: 180px;
+  }
+
+  .social-media {
+    gap: 40px;
+  }
+
+  .meios-pagamento {
+    flex-wrap: wrap;
+    height: auto;
+    padding: 0 30px;
+  }
+
+  .div-footer2 {
+    padding: 40px 20px;
+    gap: 30px;
+  }
+
+  .parceiros {
+    gap: 30px;
+  }
+}
+
+@media (min-width: 738px) and (max-width: 1028px) {
+  .footer1 {
+    padding: 20px 50px;
+    gap: 35px;
+  }
+
+  .div-footer {
+    gap: 25px;
+  }
+
+  .div-logo-social .logo_marca img {
+    width: 200px;
+  }
+
+  .social-media {
+    gap: 10px;
+  }
+
+  .div-footer2 {
+    padding: 40px 20px 20px 20px;
+    gap: 30px;
+  }
+}

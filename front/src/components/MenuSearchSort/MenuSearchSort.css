@@ -1,0 +1,52 @@
+.menu-search-sort {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  min-width: 140px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  border-radius: 12px;
+  padding: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #2d3436;
+  box-shadow:
+    0 10px 25px -5px rgba(0, 0, 0, 0.1),
+    0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  z-index: 1000;
+  animation: fadeInSlide 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  opacity: 0;
+  transform: translateY(-8px);
+}
+
+.menu-search-sort .sort-item {
+  cursor: pointer;
+  width: 100%;
+  padding: 10px 16px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.menu-search-sort .sort-item:hover {
+  background-color: #f1f3f5;
+  color: #0984e3;
+}
+
+.menu-search-sort .sort-direction {
+  font-size: 0.8rem;
+  opacity: 0.6;
+  margin-left: 8px;
+}
+
+@keyframes fadeInSlide {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
