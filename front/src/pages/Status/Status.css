@@ -1,0 +1,181 @@
+:root {
+  --success: #00c853;
+  --pending: #ffab00;
+  --danger: #ff3d00;
+  --text-main: #2c3e50;
+  --bg-soft: #f8f9fa;
+}
+
+.status-container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 40px 20px;
+  font-family: "Inter", sans-serif;
+  color: var(--text-main);
+}
+
+.status-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-block: 30px;
+}
+
+.status-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.status-badge.approved {
+  background: #e8f5e9;
+  color: var(--success);
+}
+.status-badge.pending {
+  background: #fff8e1;
+  color: var(--pending);
+}
+.status-badge.rejected {
+  background: #ffebee;
+  color: var(--danger);
+}
+
+.status-content {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 30px;
+}
+
+.payment-details-card {
+  background: white;
+  border-radius: 24px;
+  padding: 40px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+}
+
+.status-message h2 {
+  font-size: 1.8rem;
+  margin-bottom: 10px;
+}
+.status-message p {
+  color: #7f8c8d;
+}
+
+/* PIX Section */
+.pix-section {
+  background: var(--bg-soft);
+  border-radius: 16px;
+  padding: 24px;
+  margin: 30px 0;
+  text-align: center;
+}
+
+.qr-wrapper img {
+  width: 180px;
+  background: white;
+  padding: 10px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
+.copy-action {
+  display: flex;
+  background: white;
+  padding: 8px;
+  border-radius: 12px;
+  border: 1px solid #ddd;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.truncate {
+  flex: 1;
+  font-size: 0.8rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #7f8c8d;
+}
+
+.copy-action button {
+  background: var(--text-main);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  gap: 6px;
+  font-size: 0.8rem;
+  transition: 0.3s;
+}
+
+.copy-action button.copied {
+  background: var(--success);
+}
+
+/* Info Rows */
+.transaction-info {
+  border-top: 1px dashed #ddd;
+  padding-top: 20px;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  font-size: 0.95rem;
+}
+
+.info-row span:first-child {
+  color: #7f8c8d;
+}
+
+/* Order Summary */
+.order-summary h3 {
+  margin-bottom: 20px;
+}
+
+.mini-product-card {
+  display: flex;
+  gap: 15px;
+  padding: 15px;
+  background: white;
+  border-radius: 16px;
+  margin-bottom: 12px;
+  cursor: pointer;
+  transition: 0.3s;
+  border: 1px solid transparent;
+}
+
+.mini-product-card:hover {
+  border-color: #ddd;
+  transform: translateY(-2px);
+}
+
+.mini-product-card img {
+  width: 60px;
+  height: 60px;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+.mini-info h4 {
+  font-size: 0.9rem;
+  margin-bottom: 4px;
+}
+.mini-info p {
+  font-weight: 700;
+  color: var(--success);
+}
+
+@media (max-width: 768px) {
+  .status-content {
+    grid-template-columns: 1fr;
+  }
+}

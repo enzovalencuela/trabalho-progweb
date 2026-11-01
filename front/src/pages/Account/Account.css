@@ -1,0 +1,120 @@
+.account-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  padding: 20px 20px 100px 20px;
+  color: #333;
+}
+
+.account-container h2 {
+  font-size: 2rem;
+  margin-bottom: 40px;
+}
+
+.user-info,
+.change-password-section {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background-color: #fff;
+  padding: 35px;
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 500px;
+  margin-bottom: 30px;
+  border: 1px solid #e0e0e0;
+}
+
+.user-info h3,
+.change-password-section h3 {
+  font-size: 1.8rem;
+  color: #1a1a2e;
+  margin-bottom: 25px;
+  text-align: center;
+}
+
+.user-info p {
+  font-size: 1.1rem;
+  color: #555;
+  margin-bottom: 15px;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 10px;
+}
+
+.user-info p:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.user-info strong {
+  color: #1a1a2e;
+  font-weight: 700;
+  min-width: 80px;
+  display: inline-block;
+}
+
+.change-password-section .form-group {
+  margin-bottom: 20px;
+}
+
+.change-password-section .form-group label {
+  color: #555;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.change-password-section form,
+.change-password-section button {
+  width: 100%;
+}
+
+.change-password-section input {
+  background-color: #f8f9fa;
+  color: #333;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  padding: 12px;
+  width: 100%;
+  transition:
+    border-color 0.3s,
+    box-shadow 0.3s;
+}
+
+.change-password-section input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(76, 245, 121, 0.2);
+}
+
+.change-password-button {
+  width: 100%;
+  padding: 16px;
+  background-image: linear-gradient(90deg, var(--primary), var(--lightprimary));
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    transform 0.3s,
+    box-shadow 0.3s;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  margin-top: 20px;
+}
+
+.change-password-button:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+}
+
+.success-message {
+  color: #28a745;
+  margin-bottom: 15px;
+  font-weight: 500;
+  text-align: center;
+}
