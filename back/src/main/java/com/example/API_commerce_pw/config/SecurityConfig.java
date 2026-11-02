@@ -31,6 +31,9 @@ public class SecurityConfig {
                     "/api/login", "/api/auth/login", "/api/google-login",
                     "/api/payments/webhook").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/payments/create").authenticated()
+                .requestMatchers(HttpMethod.GET, "/api/payments/status").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/payments/user/**", "/api/payments/user").authenticated()
+                .requestMatchers(HttpMethod.GET, "/api/user/payments/**", "/api/user/payments").authenticated()
                 .requestMatchers(HttpMethod.GET, "/api/session").authenticated()
                 .anyRequest().authenticated())
             .exceptionHandling(errors -> errors.authenticationEntryPoint((request, response, exception) -> {
