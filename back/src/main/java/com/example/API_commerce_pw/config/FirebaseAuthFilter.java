@@ -37,10 +37,14 @@ public class FirebaseAuthFilter extends OncePerRequestFilter {
         if ("GET".equalsIgnoreCase(method)
             && ("/api/products".equals(path) || path.startsWith("/api/products/"))) return true;
         if ("GET".equalsIgnoreCase(method) && path.startsWith("/api/reviews/product/")) return true;
-        return "POST".equalsIgnoreCase(method) && (
+        if ("GET".equalsIgnoreCase(method) && path.startsWith("/api/payments/status")) return true;
+        if ("POST".equalsIgnoreCase(method) && (
             "/api/register".equals(path) || "/api/auth/register".equals(path)
                 || "/api/login".equals(path) || "/api/auth/login".equals(path)
-                || "/api/google-login".equals(path) || "/api/payments/webhook".equals(path));
+                || "/api/google-login".equals(path) || "/api/payments/webhook".equals(path)
+                || path.endsWith("/approve") || path.endsWith("/cancel")
+                || path.endsWith("/status/update"))) return true;
+        return false;
     }
 
     @Override protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws ServletException, IOException {
@@ -98,18 +102,19 @@ public class FirebaseAuthFilter extends OncePerRequestFilter {
         }
         return null;
     }
+
     private static String decodeCookie(String value) {
         if (value == null) return null;
-        String trimmed = value.trim();
         try {
-            // Preserve literal plus signs while decoding percent-encoded cookie values.
-            return URLDecoder.decode(trimmed.replace("+", "%2B"), StandardCharsets.UTF_8).trim();
-        } catch (IllegalArgumentException ignored) {
-            return trimmed;
+            return URLDecoder.decode(value, StandardCharsets.UTF_8);
+        } catch (IllegalArgumentException e) {
+            return value;
         }
     }
+
     private static void error(HttpServletResponse response, int status, String message) throws IOException {
-        response.setStatus(status); response.setContentType("application/json");
-        response.getWriter().write("{\"message\":\"" + message.replace("\"", "") + "\"}");
+        response.setStatus(status);
+        response.setContentType("application/json;charset=UTF-8");
+        response.getWriter().write("{\"message\":\"" + message + "\"}");
     }
 }

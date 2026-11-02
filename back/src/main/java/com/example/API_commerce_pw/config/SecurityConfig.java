@@ -29,7 +29,9 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST,
                     "/api/register", "/api/auth/register",
                     "/api/login", "/api/auth/login", "/api/google-login",
-                    "/api/payments/webhook").permitAll()
+                    "/api/payments/webhook",
+                    "/api/payments/*/approve", "/api/payments/*/cancel",
+                    "/api/payments/status/update").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/payments/create").authenticated()
                 .requestMatchers(HttpMethod.GET, "/api/payments/status").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/payments/user/**", "/api/payments/user").authenticated()

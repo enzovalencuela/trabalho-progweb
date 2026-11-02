@@ -26,4 +26,12 @@ public class MercadoPagoService {
     public Map<String, Object> status(String id) {
         return paymentService.status(id, null);
     }
+
+    public Map<String, Object> approve(String id) {
+        return paymentService.approve(id);
+    }
+
+    public Map<String, Object> cancel(String id) {
+        return paymentService.cancel(id);
+    }
 }

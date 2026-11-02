@@ -68,7 +68,9 @@ public class PaymentService {
         boolean isPix = "pix".equalsIgnoreCase(paymentMethodId);
 
         String paymentId = String.valueOf(System.currentTimeMillis()) + (new Random().nextInt(900) + 100);
-        String status = "APPROVED";
+
+        // Transaction is created with PENDING status so the user can test confirming or cancelling in the simulated gateway
+        String status = "PENDING";
 
         PaymentRecord record = new PaymentRecord();
         record.userId = uid;
@@ -113,7 +115,7 @@ public class PaymentService {
         paymentResponse.put("provider_payment_id", paymentId);
         paymentResponse.put("transaction_id", paymentId);
         paymentResponse.put("status", status);
-        paymentResponse.put("status_detail", "accredited");
+        paymentResponse.put("status_detail", "pending_confirmation");
         paymentResponse.put("transaction_amount", total);
         paymentResponse.put("total_amount", total);
         paymentResponse.put("payment_method_id", paymentMethodId);
@@ -121,7 +123,8 @@ public class PaymentService {
         paymentResponse.put("currency", "BRL");
         paymentResponse.put("items", items);
         paymentResponse.put("additional_info", Map.of("items", items));
-        paymentResponse.put("date_approved", LocalDateTime.now().toString());
+        paymentResponse.put("date_approved", null);
+        paymentResponse.put("created_at", record.createdAt.toString());
 
         if (isPix) {
             Map<String, Object> txData = new LinkedHashMap<>();
@@ -138,7 +141,65 @@ public class PaymentService {
     @Transactional
     public void webhook(String id) {
         if (id == null || id.isBlank()) return;
-        PaymentRecord p = payments.findByProviderPaymentId(id)
+        PaymentRecord p = findRecordByIdOrProviderId(id);
+        if (p != null) {
+            p.status = "APPROVED";
+            p.updatedAt = LocalDateTime.now();
+            payments.save(p);
+        }
+    }
+
+    @Transactional
+    public Map<String, Object> approve(String id) {
+        PaymentRecord p = findRecordByIdOrProviderId(id);
+        if (p == null) {
+            throw new AppError("Pagamento nao encontrado.", 404);
+        }
+
+        String currentStatus = p.status != null ? p.status.toUpperCase() : "";
+        if (!"CANCELLED".equals(currentStatus) && !"APPROVED".equals(currentStatus)) {
+            p.status = "APPROVED";
+            p.updatedAt = LocalDateTime.now();
+            payments.save(p);
+        }
+
+        return formatRecord(p);
+    }
+
+    @Transactional
+    public Map<String, Object> cancel(String id) {
+        PaymentRecord p = findRecordByIdOrProviderId(id);
+        if (p == null) {
+            throw new AppError("Pagamento nao encontrado.", 404);
+        }
+
+        p.status = "CANCELLED";
+        p.updatedAt = LocalDateTime.now();
+        payments.save(p);
+
+        return formatRecord(p);
+    }
+
+    @Transactional
+    public Map<String, Object> updateStatus(String id, String newStatus) {
+        PaymentRecord p = findRecordByIdOrProviderId(id);
+        if (p == null) {
+            throw new AppError("Pagamento nao encontrado.", 404);
+        }
+
+        p.status = (newStatus != null && !newStatus.isBlank()) ? newStatus.toUpperCase() : "PENDING";
+        p.updatedAt = LocalDateTime.now();
+        payments.save(p);
+
+        return formatRecord(p);
+    }
+
+    public PaymentRecord findRecordByIdOrProviderId(String id) {
+        if (id == null || id.isBlank() || "undefined".equalsIgnoreCase(id) || "null".equalsIgnoreCase(id)) {
+            return null;
+        }
+
+        return payments.findByProviderPaymentId(id)
                 .or(() -> {
                     try {
                         return payments.findById(Integer.valueOf(id));
@@ -147,26 +208,10 @@ public class PaymentService {
                     }
                 })
                 .orElse(null);
-        if (p != null) {
-            p.status = "APPROVED";
-            p.updatedAt = LocalDateTime.now();
-            payments.save(p);
-        }
     }
 
     public Map<String, Object> status(String id, Integer fallbackUserId) {
-        PaymentRecord p = null;
-        if (id != null && !id.isBlank() && !"undefined".equalsIgnoreCase(id) && !"null".equalsIgnoreCase(id)) {
-            p = payments.findByProviderPaymentId(id)
-                    .or(() -> {
-                        try {
-                            return payments.findById(Integer.valueOf(id));
-                        } catch (NumberFormatException ignored) {
-                            return Optional.empty();
-                        }
-                    })
-                    .orElse(null);
-        }
+        PaymentRecord p = findRecordByIdOrProviderId(id);
 
         if (p == null && fallbackUserId != null) {
             List<PaymentRecord> userPayments = payments.findAllByUserIdOrderByCreatedAtDesc(fallbackUserId);
@@ -199,7 +244,7 @@ public class PaymentService {
         out.put("transaction_id", tid);
         out.put("record_id", p.id);
         out.put("user_id", p.userId);
-        out.put("status", p.status != null ? p.status : "APPROVED");
+        out.put("status", p.status != null ? p.status : "PENDING");
         out.put("status_detail", "accredited");
         out.put("amount", p.amount);
         out.put("total_amount", p.amount);
@@ -217,7 +262,9 @@ public class PaymentService {
         }
         out.put("items", items);
         out.put("created_at", p.createdAt != null ? p.createdAt.toString() : null);
-        out.put("date_approved", p.createdAt != null ? p.createdAt.toString() : LocalDateTime.now().toString());
+        out.put("date_approved", "APPROVED".equalsIgnoreCase(p.status) 
+                ? (p.updatedAt != null ? p.updatedAt.toString() : LocalDateTime.now().toString()) 
+                : null);
 
         return out;
     }

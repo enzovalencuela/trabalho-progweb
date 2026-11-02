@@ -36,6 +36,39 @@ public class PaymentController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/{id}/approve")
+    public ResponseEntity<?> approve(@PathVariable String id) {
+        Map<String, Object> payment = paymentService.approve(id);
+        Map<String, Object> response = new LinkedHashMap<>(payment);
+        response.put("payment", payment);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{id}/cancel")
+    public ResponseEntity<?> cancel(@PathVariable String id) {
+        Map<String, Object> payment = paymentService.cancel(id);
+        Map<String, Object> response = new LinkedHashMap<>(payment);
+        response.put("payment", payment);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/status/update")
+    public ResponseEntity<?> updateStatus(@RequestBody Map<String, Object> body) {
+        String id = String.valueOf(body.get("id"));
+        String status = String.valueOf(body.get("status"));
+        Map<String, Object> payment;
+        if ("APPROVED".equalsIgnoreCase(status)) {
+            payment = paymentService.approve(id);
+        } else if ("CANCELLED".equalsIgnoreCase(status) || "CANCELED".equalsIgnoreCase(status)) {
+            payment = paymentService.cancel(id);
+        } else {
+            payment = paymentService.updateStatus(id, status);
+        }
+        Map<String, Object> response = new LinkedHashMap<>(payment);
+        response.put("payment", payment);
+        return ResponseEntity.ok(response);
+    }
+
     @PostMapping("/webhook")
     public ResponseEntity<?> webhook(@RequestBody Map<String, Object> b) {
         Object id = b.get("id");

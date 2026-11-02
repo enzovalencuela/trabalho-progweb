@@ -35,6 +35,7 @@ interface AuthContextType {
   selectedItems: number[];
   setSelectedItems: React.Dispatch<React.SetStateAction<number[]>>;
   paymentStatus: PaymentStatus | null;
+  setPaymentStatus: React.Dispatch<React.SetStateAction<PaymentStatus | null>>;
   purchasedProducts: Product[];
   loading: boolean;
   isAuthReady: boolean;
@@ -352,13 +353,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, [atualizarQuery]);
 
   useEffect(() => {
-    if (!isAuthReady || !user) return;
+    if (!isAuthReady || !user) {
+      setLoading(false);
+      return;
+    }
 
     const queryStr = paymentId
       ? paymentId.toString()
       : new URLSearchParams(window.location.search).toString();
 
-    // If query contains payment_id=undefined, try without param so backend returns latest payment
     const cleanQuery = queryStr.includes("payment_id=undefined")
       ? ""
       : queryStr;
@@ -408,7 +411,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
           setPaymentStatus(updatedStatus);
         } else {
-          console.error("Erro ao obter status do pagamento:", data.error || data.message);
           setPaymentStatus(null);
         }
       } catch (error) {
@@ -432,7 +434,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return;
       }
 
-      setLoading(true);
       try {
         const ids = items
           .map((item: any) => Number(item.id))
@@ -487,8 +488,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             })),
           );
         }
-      } finally {
-        setLoading(false);
       }
     };
 
@@ -507,6 +506,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       selectedItems,
       setSelectedItems,
       paymentStatus,
+      setPaymentStatus,
       purchasedProducts,
       loading: loading || !isAuthReady,
       isAuthReady,
