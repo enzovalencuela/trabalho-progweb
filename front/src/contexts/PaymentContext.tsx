@@ -6,9 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { authenticatedFetch } from "../utils/api";
 
 interface PaymentContextType {
-  onSubmit: ({ formData }: any) => Promise<void>;
-  onError: (error: any) => Promise<void>;
-  onReady: () => Promise<void>;
+  onSubmitCustom: (formData: Record<string, any>) => Promise<void>;
   totalAmount: number;
   loading: boolean;
   setLoading: React.Dispatch<React.SetStateAction<boolean>>;
@@ -67,7 +65,7 @@ export const PaymentProvider: React.FC<PaymentProviderProps> = ({
     return maxMaxParcelas;
   };
 
-  const onSubmit = async ({ formData }: { formData: Record<string, any> }) => {
+  const onSubmitCustom = async (formData: Record<string, any>) => {
     if (!user || totalAmount <= 0) {
       setShowErrorMessage(true);
       return;
@@ -76,8 +74,8 @@ export const PaymentProvider: React.FC<PaymentProviderProps> = ({
     setLoading(true);
     setPaymentProcessing(true);
 
-    return new Promise<void>((resolve, reject) => {
-      authenticatedFetch(`${VITE_BACKEND_URL}/api/payments/create`, {
+    try {
+      const response = await authenticatedFetch(`${VITE_BACKEND_URL}/api/payments/create`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -87,49 +85,34 @@ export const PaymentProvider: React.FC<PaymentProviderProps> = ({
           product_ids: selectedItems,
           user_id: user.id,
         }),
-      })
-        .then((response) => {
-          if (!response.ok) throw new Error("Erro no pagamento");
-          return response.json();
-        })
-        .then((data) => {
-          setLoading(false);
-          setPaymentProcessing(false);
-          const id = data.payment.id;
-          navigate(`/status?payment_id=${id}`);
-          setAtualizarQuery(true);
-          resolve();
-        })
-        .catch((error) => {
-          setLoading(false);
-          setPaymentProcessing(false);
-          setShowErrorMessage(true);
-          console.error("Erro ao processar pagamento", error);
-          reject();
-        });
-    });
-  };
+      });
 
-  const onError = async (error: any) => {
-    setLoading(false);
-    setPaymentProcessing(false);
-    console.log("Erro:", error);
-  };
+      if (!response.ok) {
+        throw new Error("Erro ao processar pagamento");
+      }
 
-  const onReady = async () => {
-    setLoading(false);
-    setPaymentProcessing(false);
+      const data = await response.json();
+      setLoading(false);
+      setPaymentProcessing(false);
+      const paymentObj = data.payment || data;
+      const id = paymentObj.id || paymentObj.transaction_id || paymentObj.provider_payment_id || data.id;
+      navigate(`/status?payment_id=${id}`);
+      setAtualizarQuery(true);
+    } catch (error) {
+      setLoading(false);
+      setPaymentProcessing(false);
+      setShowErrorMessage(true);
+      console.error("Erro ao processar pagamento", error);
+    }
   };
 
   const contextValue = {
-    onSubmit,
+    onSubmitCustom,
     totalAmount,
     loading,
     setLoading,
     showErrorMessage,
     setShowErrorMessage,
-    onError,
-    onReady,
     maxParcelas,
     paymentProcessing,
   };
@@ -144,7 +127,7 @@ export const PaymentProvider: React.FC<PaymentProviderProps> = ({
 export const usePayment = () => {
   const context = useContext(PaymentContext);
   if (context === undefined) {
-    throw new Error("useAuth deve ser usado dentro de um AuthProvider");
+    throw new Error("usePayment deve ser usado dentro de um PaymentProvider");
   }
   return context;
 };
