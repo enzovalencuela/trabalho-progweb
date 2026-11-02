@@ -19,11 +19,8 @@ import {
   browserLocalPersistence,
 } from "firebase/auth";
 import type { User as FirebaseAuthUser } from "firebase/auth";
-import { getFirestore, doc, setDoc, setLogLevel } from "firebase/firestore";
 import { fetchProductsByIdsCached } from "../utils/productCache";
 import { authenticatedFetch } from "../utils/api";
-
-setLogLevel("debug");
 
 type UserData = FirebaseAuthUser & User;
 
@@ -49,11 +46,14 @@ interface AuthProviderProps {
 }
 
 interface Items {
-  id: string;
-  description: string;
-  quantity: string;
-  title: string;
-  unit_price: string;
+  id: string | number;
+  description?: string;
+  quantity?: string | number;
+  title?: string;
+  titulo?: string;
+  unit_price?: string | number;
+  preco?: string | number;
+  img?: string;
 }
 
 interface AdditionalInfo {
@@ -75,15 +75,22 @@ interface PixPayload {
 }
 
 interface PaymentStatus {
-  id: number;
+  id: number | string;
   status: string;
   status_detail?: string;
   total_amount?: number;
   transaction_amount?: number;
+  amount?: number;
   payment_type?: string;
   payment_method?: string;
+  payment_method_id?: string;
   date_approved?: string;
+  created_at?: string;
+  provider_payment_id?: string;
+  providerPaymentId?: string;
+  transaction_id?: string;
   additional_info?: AdditionalInfo;
+  items?: Items[] | any[];
   installments?: number;
   point_of_interaction?: PointOfInteraction;
   pix?: PixPayload;
@@ -94,8 +101,6 @@ const VITE_BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
 let app: any;
 let auth: any;
-let db: any;
-let appId: string;
 
 try {
   const firebaseConfig = {
@@ -106,7 +111,6 @@ try {
     messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
     appId: import.meta.env.VITE_FIREBASE_APP_ID,
   };
-  appId = import.meta.env.VITE_FIREBASE_APP_ID || "default-app-id";
   if (!firebaseConfig.apiKey || firebaseConfig.apiKey.length < 10) {
     throw new Error(
       "VITE_FIREBASE_API_KEY não está configurada ou é inválida.",
@@ -117,10 +121,8 @@ try {
   setPersistence(auth, browserLocalPersistence).catch((error) =>
     console.error("Erro ao definir persistência:", error),
   );
-
-  db = getFirestore(app);
 } catch (e) {
-  console.error("Erro ao inicializar Firebase:", e);
+  console.error("Erro ao inicializar Firebase Auth:", e);
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
@@ -138,19 +140,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [cart, setCart] = useState<Product[]>([]);
 
   useEffect(() => {
-    if (!auth || !db) return;
+    if (!auth) return;
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       try {
-        const response = await authenticatedFetch(`${VITE_BACKEND_URL}/api/session`, {
-          method: "GET",
-          credentials: "include",
-        });
+        const response = await authenticatedFetch(
+          `${VITE_BACKEND_URL}/api/session`,
+          {
+            method: "GET",
+            credentials: "include",
+          },
+        );
         if (response.ok) {
           const backendData = await response.json();
-          setUser(firebaseUser
-            ? { ...firebaseUser, ...backendData, id: backendData.id }
-            : backendData);
+          setUser(
+            firebaseUser
+              ? { ...firebaseUser, ...backendData, id: backendData.id }
+              : backendData,
+          );
         } else {
           setUser(firebaseUser as UserData | null);
         }
@@ -166,43 +173,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return () => unsubscribe();
   }, []);
 
-  const syncUserToFirestore = async (
-    firebaseUser: FirebaseAuthUser,
-    backendData: User,
-  ) => {
-    const userId = firebaseUser.uid;
-    const userDocRef = doc(
-      db,
-      "artifacts",
-      appId,
-      "users",
-      userId,
-      "user_data",
-      "profile",
-    );
-
-    const dataToSave: User = {
-      name: backendData.name || firebaseUser.displayName,
-      id: backendData.id,
-      role: backendData.role || "user",
-    };
-
-    try {
-      await setDoc(userDocRef, dataToSave, { merge: true });
-      console.debug("Dados do usuário sincronizados com o Firestore.");
-      return dataToSave;
-    } catch (e) {
-      console.error("Erro ao salvar dados no Firestore:", e);
-      return {};
-    }
-  };
-
   const login = async (backendData: User) => {
-    const firebaseUser = auth.currentUser;
-    if (!firebaseUser) return;
+    const firebaseUser = auth?.currentUser;
+    const combinedUser = firebaseUser
+      ? { ...firebaseUser, ...backendData }
+      : backendData;
 
-    const syncedData = await syncUserToFirestore(firebaseUser, backendData);
-    const combinedUser: UserData = { ...firebaseUser, ...syncedData };
     setCart([]);
     setUser(combinedUser);
   };
@@ -297,7 +273,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     };
     fetchCart();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [user?.id, isAuthReady]);
 
   const addToCart = async (item: Product) => {
@@ -313,13 +291,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       return "error";
     }
     try {
-      const response = await authenticatedFetch(`${VITE_BACKEND_URL}/api/cart/add`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user.id, productId: item.id }),
-        credentials: "include",
-      });
-      if (!response.ok) throw new Error(`Falha ao adicionar ao carrinho: ${response.status}`);
+      const response = await authenticatedFetch(
+        `${VITE_BACKEND_URL}/api/cart/add`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: user.id, productId: item.id }),
+          credentials: "include",
+        },
+      );
+      if (!response.ok)
+        throw new Error(`Falha ao adicionar ao carrinho: ${response.status}`);
       setCart((prevCart) => [...prevCart, item]);
       return "ok";
     } catch (error) {
@@ -331,13 +313,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const removeFromCart = async (itemId: number) => {
     if (!user || !user.id) return;
     try {
-      const response = await authenticatedFetch(`${VITE_BACKEND_URL}/api/cart/remove`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user.id, productId: itemId }),
-        credentials: "include",
-      });
-      if (!response.ok) throw new Error(`Falha ao remover do carrinho: ${response.status}`);
+      const response = await authenticatedFetch(
+        `${VITE_BACKEND_URL}/api/cart/remove`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: user.id, productId: itemId }),
+          credentials: "include",
+        },
+      );
+      if (!response.ok)
+        throw new Error(`Falha ao remover do carrinho: ${response.status}`);
       setCart((prevCart) => prevCart.filter((item) => item.id !== itemId));
       setSelectedItems((prevSelected) =>
         prevSelected.filter((id) => id !== itemId),
@@ -348,33 +334,50 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   useEffect(() => {
-    setPaymentId(new URLSearchParams(window.location.search));
+    const syncQuery = () => {
+      setPaymentId(new URLSearchParams(window.location.search));
+    };
+    syncQuery();
+    window.addEventListener("popstate", syncQuery);
+    return () => window.removeEventListener("popstate", syncQuery);
   }, []);
 
   useEffect(() => {
     if (atualizarQuery) {
-      setPaymentId(new URLSearchParams(window.location.search));
+      setTimeout(() => {
+        setPaymentId(new URLSearchParams(window.location.search));
+      }, 50);
+      setAtualizarQuery(false);
     }
-    setAtualizarQuery(false);
   }, [atualizarQuery]);
 
   useEffect(() => {
-    if (!isAuthReady || !user || !paymentId) return;
+    if (!isAuthReady || !user) return;
+
+    const queryStr = paymentId
+      ? paymentId.toString()
+      : new URLSearchParams(window.location.search).toString();
+
+    // If query contains payment_id=undefined, try without param so backend returns latest payment
+    const cleanQuery = queryStr.includes("payment_id=undefined")
+      ? ""
+      : queryStr;
 
     setLoading(true);
     const fetchPaymentStatus = async () => {
       try {
-        const response = await authenticatedFetch(
-          `${VITE_BACKEND_URL}/api/payments/status?${paymentId}`,
-          {
-            method: "GET",
-            credentials: "include",
-          },
-        );
+        const url = cleanQuery
+          ? `${VITE_BACKEND_URL}/api/payments/status?${cleanQuery}`
+          : `${VITE_BACKEND_URL}/api/payments/status`;
+
+        const response = await authenticatedFetch(url, {
+          method: "GET",
+          credentials: "include",
+        });
 
         const data = await response.json();
-        if (response.ok && data.payment) {
-          const p = data.payment;
+        if (response.ok && (data.payment || data.id)) {
+          const p = data.payment || data;
           const point_of_interaction =
             p.point_of_interaction ||
             (p.pix
@@ -387,23 +390,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 }
               : undefined);
 
-          const updatedStatus = {
+          const rawAmount = p.transaction_amount ?? p.total_amount ?? p.amount;
+          const total_amount = rawAmount != null ? Number(rawAmount) : 0;
+          const transactionId =
+            p.id ||
+            p.provider_payment_id ||
+            p.providerPaymentId ||
+            p.transaction_id;
+
+          const updatedStatus: PaymentStatus = {
             ...p,
-            total_amount: p.transaction_amount || p.total_amount,
+            id: transactionId,
+            total_amount,
+            transaction_amount: total_amount,
             point_of_interaction,
           };
 
           setPaymentStatus(updatedStatus);
         } else {
-          console.error("Erro ao obter status do pagamento:", data.error);
+          console.error("Erro ao obter status do pagamento:", data.error || data.message);
           setPaymentStatus(null);
         }
-        setTimeout(() => {
-          setLoading(false);
-        }, 500);
       } catch (error) {
         console.error("Erro de rede ao buscar status:", error);
         setPaymentStatus(null);
+      } finally {
         setLoading(false);
       }
     };
@@ -412,23 +423,71 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   useEffect(() => {
     const fetchPurchasedProducts = async () => {
-      if (!paymentStatus?.additional_info?.items) {
+      const items =
+        paymentStatus?.additional_info?.items ||
+        (paymentStatus as any)?.items;
+
+      if (!items || !items.length) {
         setPurchasedProducts([]);
         return;
       }
 
       setLoading(true);
       try {
-        const ids = paymentStatus.additional_info.items
-          .map((item) => Number(item.id))
-          .filter((id) => Number.isFinite(id));
-        const products = await fetchProductsByIdsCached(VITE_BACKEND_URL, ids);
+        const ids = items
+          .map((item: any) => Number(item.id))
+          .filter((id: any) => Number.isFinite(id));
+
+        let products: Product[] = [];
+        if (ids.length > 0) {
+          products = await fetchProductsByIdsCached(VITE_BACKEND_URL, ids);
+        }
+
+        if (products.length === 0 && items.length > 0) {
+          products = items.map((item: any) => ({
+            id: Number(item.id),
+            titulo: item.title || item.titulo || "Produto",
+            descricao: item.description || "",
+            img: item.img || "",
+            preco: Number(item.unit_price || item.preco || 0),
+            max_parcelas: 1,
+            taxa_parcela: 0,
+            categoria: item.category_id || "",
+            estoque: 1,
+            disponivel: true,
+          }));
+        } else {
+          products = products.map((prod) => {
+            const itemMatch = items.find((it: any) => Number(it.id) === prod.id);
+            return {
+              ...prod,
+              img: prod.img || itemMatch?.img || "",
+              titulo: prod.titulo || itemMatch?.title || itemMatch?.titulo || "",
+              preco: prod.preco ?? Number(itemMatch?.unit_price || itemMatch?.preco || 0),
+            };
+          });
+        }
+
         setPurchasedProducts(products);
-        setTimeout(() => {
-          setLoading(false);
-        }, 500);
       } catch (error) {
         console.error("Erro ao buscar produtos comprados:", error);
+        if (items) {
+          setPurchasedProducts(
+            items.map((item: any) => ({
+              id: Number(item.id),
+              titulo: item.title || item.titulo || "Produto",
+              descricao: item.description || "",
+              img: item.img || "",
+              preco: Number(item.unit_price || item.preco || 0),
+              max_parcelas: 1,
+              taxa_parcela: 0,
+              categoria: item.category_id || "",
+              estoque: 1,
+              disponivel: true,
+            })),
+          );
+        }
+      } finally {
         setLoading(false);
       }
     };

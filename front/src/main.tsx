@@ -8,7 +8,6 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { PaymentProvider } from "./contexts/PaymentContext.tsx";
 import App from "./App.tsx";
 import ProtectedRoute from "./components/ProtectedRoute.tsx";
-import { initMercadoPago } from "@mercadopago/sdk-react";
 import { ProductProvider } from "./contexts/ProductContext.tsx";
 import Loading from "./components/Loading/Loading.tsx";
 import "./App.css";
@@ -31,10 +30,6 @@ const PaymentResum = lazy(
 const MinhasCompras = lazy(
   () => import("./pages/MinhasCompras/MinhasCompras.tsx"),
 );
-
-initMercadoPago(import.meta.env.VITE_MP_PUBLIC_KEY, {
-  locale: "pt-BR",
-});
 
 const RouteFallback = () => <Loading variant="products" />;
 
