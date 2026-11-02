@@ -5,7 +5,7 @@ services:
     environment:
       POSTGRES_DB: ecommerce_db
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: postgres123
     ports:
       - "5432:5432"
     volumes:
@@ -16,6 +16,20 @@ services:
       timeout: 5s
       retries: 5
 
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      db:
+        condition: service_healthy
+
   backend:
     build:
       context: ./back
@@ -25,7 +39,7 @@ services:
       SERVER_PORT: 8081
       DATABASE_URL: ${DATABASE_URL:-jdbc:postgresql://db:5432/ecommerce_db}
       DATABASE_USERNAME: ${DATABASE_USERNAME:-postgres}
-      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-postgres}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-postgres123}
       MERCADO_PAGO_ACCESS_TOKEN: ${MERCADO_PAGO_ACCESS_TOKEN}
       GOOGLE_APPLICATION_CREDENTIALS: ${GOOGLE_APPLICATION_CREDENTIALS}
     ports:
@@ -55,3 +69,4 @@ services:
 
 volumes:
   postgres_data:
+  pgadmin_data:
