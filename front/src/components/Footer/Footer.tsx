@@ -63,15 +63,15 @@ function Footer() {
           </LinkSection>
         </div>
         <div className="meios-pagamento">
-          <img src="./img/amex.svg" alt="" />
-          <img src="./img/mastercard.svg" alt="" />
-          <img src="./img/visa.svg" alt="" />
-          <img src="./img/hipercard.svg" alt="" />
-          <img src="./img/elo.svg" alt="" />
-          <img src="./img/b.svg" alt="" />
-          <img src="./img/paypal.svg" alt="" />
-          <img src="./img/pix.svg" alt="" />
-          <img src="./img/boleto.svg" alt="" />
+          <img src="/img/amex.svg" alt="" />
+          <img src="/img/mastercard.svg" alt="" />
+          <img src="/img/visa.svg" alt="" />
+          <img src="/img/hipercard.svg" alt="" />
+          <img src="/img/elo.svg" alt="" />
+          <img src="/img/b.svg" alt="" />
+          <img src="/img/paypal.svg" alt="" />
+          <img src="/img/pix.svg" alt="" />
+          <img src="/img/boleto.svg" alt="" />
         </div>
       </div>
       <div className="div-footer2">

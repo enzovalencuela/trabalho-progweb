@@ -18,7 +18,7 @@ const LinkSection: React.FC<LinkSectionProps> = ({ title, children }) => {
   return (
     <div className={`div-links ${aberto ? "aberto" : ""}`}>
       <h3 onClick={toggleLinks}>
-        {title} <img src="./img/arrow-more.svg" alt="ícone de seta" />
+        {title} <img src="/img/arrow-more.svg" alt="ícone de seta" />
       </h3>
       {children}
     </div>
