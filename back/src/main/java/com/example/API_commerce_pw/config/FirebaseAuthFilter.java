@@ -23,9 +23,30 @@ import java.util.List;
 public class FirebaseAuthFilter extends OncePerRequestFilter {
     private final FirebaseAuthService firebase;
     private final UserRepository users;
+
     public FirebaseAuthFilter(FirebaseAuthService firebase, UserRepository users) {
         this.firebase = firebase;
         this.users = users;
+    }
+
+    private boolean isPublicPath(String method, String path) {
+        if ("OPTIONS".equalsIgnoreCase(method)) return true;
+        if ("GET".equalsIgnoreCase(method) && "/health".equals(path)) return true;
+        if ("GET".equalsIgnoreCase(method)
+            && ("/api/products".equals(path) || path.startsWith("/api/products/"))) return true;
+        if ("GET".equalsIgnoreCase(method) && path.startsWith("/api/reviews/product/")) return true;
+        if ("GET".equalsIgnoreCase(method) && (
+            path.startsWith("/api/payments/status")
+            || path.startsWith("/api/reviews/can-review")
+            || path.startsWith("/api/reviews/eligibility"))) return true;
+        if ("POST".equalsIgnoreCase(method) && (
+            "/api/register".equals(path) || "/api/auth/register".equals(path)
+                || "/api/login".equals(path) || "/api/auth/login".equals(path)
+                || "/api/google-login".equals(path) || "/api/payments/webhook".equals(path)
+                || "/api/reviews".equals(path)
+                || path.endsWith("/approve") || path.endsWith("/cancel")
+                || path.endsWith("/status/update"))) return true;
+        return false;
     }
 
     @Override
@@ -34,20 +55,22 @@ public class FirebaseAuthFilter extends OncePerRequestFilter {
         String method = request.getMethod();
         if ("OPTIONS".equalsIgnoreCase(method)) return true;
         if ("GET".equalsIgnoreCase(method) && "/health".equals(path)) return true;
-        if ("GET".equalsIgnoreCase(method)
-            && ("/api/products".equals(path) || path.startsWith("/api/products/"))) return true;
-        if ("GET".equalsIgnoreCase(method) && path.startsWith("/api/reviews/product/")) return true;
-        if ("GET".equalsIgnoreCase(method) && path.startsWith("/api/payments/status")) return true;
-        if ("POST".equalsIgnoreCase(method) && (
-            "/api/register".equals(path) || "/api/auth/register".equals(path)
-                || "/api/login".equals(path) || "/api/auth/login".equals(path)
-                || "/api/google-login".equals(path) || "/api/payments/webhook".equals(path)
-                || path.endsWith("/approve") || path.endsWith("/cancel")
-                || path.endsWith("/status/update"))) return true;
+
+        boolean isPublic = isPublicPath(method, path);
+        if (isPublic) {
+            String bearer = request.getHeader("Authorization");
+            boolean hasBearer = bearer != null && bearer.regionMatches(true, 0, "Bearer ", 0, 7) && !bearer.substring(7).trim().isEmpty();
+            boolean hasCookie = cookie(request, "jwt_token") != null;
+            // If public and no credentials supplied, skip filter to avoid rejecting unauthenticated clients
+            if (!hasBearer && !hasCookie) {
+                return true;
+            }
+        }
         return false;
     }
 
-    @Override protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws ServletException, IOException {
+    @Override
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws ServletException, IOException {
         String bearer = request.getHeader("Authorization");
         String token = bearer != null && bearer.regionMatches(true, 0, "Bearer ", 0, 7) ? bearer.substring(7).trim() : null;
         boolean session = false;
@@ -57,6 +80,10 @@ public class FirebaseAuthFilter extends OncePerRequestFilter {
         }
         if (token == null || token.isBlank()) {
             SecurityContextHolder.clearContext();
+            if (isPublicPath(request.getMethod(), request.getRequestURI())) {
+                chain.doFilter(request, response);
+                return;
+            }
             error(response, HttpServletResponse.SC_UNAUTHORIZED, "Acesso negado: sessao expirada ou nao encontrada.");
             return;
         }
@@ -78,6 +105,10 @@ public class FirebaseAuthFilter extends OncePerRequestFilter {
             chain.doFilter(request, response);
         } catch (IllegalArgumentException e) {
             SecurityContextHolder.clearContext();
+            if (isPublicPath(request.getMethod(), request.getRequestURI())) {
+                chain.doFilter(request, response);
+                return;
+            }
             response.addHeader("Set-Cookie", "jwt_token=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=None");
             error(response, HttpServletResponse.SC_UNAUTHORIZED, "Sessao invalida ou expirada.");
         } catch (IllegalStateException e) {

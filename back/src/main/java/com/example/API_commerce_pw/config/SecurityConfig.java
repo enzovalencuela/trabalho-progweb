@@ -25,11 +25,13 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/health").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/products", "/api/products/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/reviews/product/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/reviews/can-review", "/api/reviews/eligibility").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/sales/**", "/api/reviews/summary").authenticated()
                 .requestMatchers(HttpMethod.POST,
                     "/api/register", "/api/auth/register",
                     "/api/login", "/api/auth/login", "/api/google-login",
                     "/api/payments/webhook",
+                    "/api/reviews",
                     "/api/payments/*/approve", "/api/payments/*/cancel",
                     "/api/payments/status/update").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/payments/create").authenticated()

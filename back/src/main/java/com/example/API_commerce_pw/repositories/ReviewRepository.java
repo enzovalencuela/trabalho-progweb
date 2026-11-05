@@ -10,7 +10,17 @@ public interface ReviewRepository extends JpaRepository<ProductReview, Integer> 
 
     boolean existsByUserIdAndProductId(Integer userId, Integer productId);
 
-    @Query(value = "select exists(select 1 from payments p cross join lateral jsonb_array_elements(coalesce(p.additional_info->'items','[]'::jsonb)) item where p.user_id=:uid and p.status='approved' and item->>'id'=cast(:pid as text))", nativeQuery = true)
+    @Query(value = "select exists(" +
+            "select 1 from payments p " +
+            "cross join lateral jsonb_array_elements(" +
+            "  case when p.additional_info is not null and jsonb_typeof(p.additional_info->'items') = 'array' " +
+            "       then p.additional_info->'items' " +
+            "       else '[]'::jsonb end" +
+            ") item " +
+            "where p.user_id = :uid " +
+            "and lower(p.status) = 'approved' " +
+            "and (item->>'id' = cast(:pid as text) or item->>'productId' = cast(:pid as text))" +
+            ")", nativeQuery = true)
     boolean hasApprovedProductPayment(@Param("uid") Integer userId, @Param("pid") Integer productId);
 
     @Query(value = "select coalesce(avg(nota),0) from product_reviews", nativeQuery = true)

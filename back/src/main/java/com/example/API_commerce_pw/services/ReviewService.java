@@ -22,6 +22,7 @@ public class ReviewService {
             m.put("userId", x.userId);
             m.put("userName", "Cliente");
             m.put("rating", x.nota);
+            m.put("nota", x.nota);
             m.put("title", x.titulo);
             m.put("comment", x.comentario);
             m.put("imageUrl", x.imgUrl);
@@ -31,16 +32,41 @@ public class ReviewService {
         }).toList();
     }
 
-    public Map<String, Object> eligibility(int u, int p) {
-        boolean paid = r.hasApprovedProductPayment(u, p), reviewed = r.existsByUserIdAndProductId(u, p);
-        return Map.of("eligible", paid && !reviewed, "hasApprovedPayment", paid, "alreadyReviewed", reviewed);
+    public Map<String, Object> eligibility(Integer u, Integer p) {
+        if (u == null || p == null) {
+            Map<String, Object> map = new LinkedHashMap<>();
+            map.put("canReview", false);
+            map.put("eligible", false);
+            map.put("hasApprovedPayment", false);
+            map.put("hasPurchased", false);
+            map.put("alreadyReviewed", false);
+            map.put("hasAlreadyReviewed", false);
+            return map;
+        }
+
+        boolean paid = r.hasApprovedProductPayment(u, p);
+        boolean reviewed = r.existsByUserIdAndProductId(u, p);
+
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("canReview", paid && !reviewed);
+        map.put("eligible", paid && !reviewed);
+        map.put("hasApprovedPayment", paid);
+        map.put("hasPurchased", paid);
+        map.put("alreadyReviewed", reviewed);
+        map.put("hasAlreadyReviewed", reviewed);
+        return map;
     }
 
     public ProductReview create(ProductReview x) {
-        if (!r.hasApprovedProductPayment(x.userId, x.productId))
-            throw new AppError("Voce precisa ter uma compra aprovada deste produto para avalia-lo.", 403);
-        if (r.existsByUserIdAndProductId(x.userId, x.productId))
-            throw new AppError("Voce ja avaliou este produto.", 409);
+        if (x.userId == null || x.productId == null) {
+            throw new AppError("Dados inválidos para avaliação.", 400);
+        }
+        if (!r.hasApprovedProductPayment(x.userId, x.productId)) {
+            throw new AppError("Você precisa ter comprado este produto para poder avaliá-lo.", 403);
+        }
+        if (r.existsByUserIdAndProductId(x.userId, x.productId)) {
+            throw new AppError("Você já avaliou este produto.", 409);
+        }
         return r.save(x);
     }
 
