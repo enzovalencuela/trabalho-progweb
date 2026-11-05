@@ -30,7 +30,9 @@ interface ReviewContextType {
   reviewsCache: Record<number, Review[]>;
   summaryCache: Record<number, ReviewSummary>;
   fetchReviewsByProduct: (productId: number) => Promise<Review[]>;
-  addReview: (reviewData: Omit<Review, "id" | "createdAt">) => Promise<boolean>;
+  addReview: (
+    reviewData: Omit<Review, "id" | "createdAt">,
+  ) => Promise<{ success: boolean; error?: string }>;
   checkEligibility: (
     userId: number,
     productId: number,
@@ -91,15 +93,26 @@ export const ReviewProvider: React.FC<{ children: React.ReactNode }> = ({
   const checkEligibility = useCallback(
     async (userId: number, productId: number): Promise<ReviewEligibility> => {
       try {
-        const response = await authenticatedFetch(
-          `${VITE_BACKEND_URL}/api/reviews/eligibility?userId=${userId}&productId=${productId}`,
+        let response = await authenticatedFetch(
+          `${VITE_BACKEND_URL}/api/reviews/can-review?userId=${userId}&productId=${productId}`,
         );
+        if (!response.ok) {
+          response = await authenticatedFetch(
+            `${VITE_BACKEND_URL}/api/reviews/eligibility?userId=${userId}&productId=${productId}`,
+          );
+        }
         if (response.ok) {
           const data = await response.json();
           return {
-            canReview: Boolean(data.eligible),
-            hasPurchased: Boolean(data.hasApprovedPayment),
-            hasAlreadyReviewed: Boolean(data.alreadyReviewed),
+            canReview: Boolean(data.canReview ?? data.eligible),
+            hasPurchased: Boolean(
+              data.hasPurchased ?? data.hasApprovedPayment ?? data.paid,
+            ),
+            hasAlreadyReviewed: Boolean(
+              data.alreadyReviewed ??
+                data.hasAlreadyReviewed ??
+                data.reviewed,
+            ),
           };
         }
       } catch (err) {
@@ -116,13 +129,16 @@ export const ReviewProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const addReview = async (
     reviewData: Omit<Review, "id" | "createdAt">,
-  ): Promise<boolean> => {
+  ): Promise<{ success: boolean; error?: string }> => {
     try {
-      const response = await authenticatedFetch(`${VITE_BACKEND_URL}/api/reviews`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(reviewData),
-      });
+      const response = await authenticatedFetch(
+        `${VITE_BACKEND_URL}/api/reviews`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(reviewData),
+        },
+      );
 
       if (response.ok) {
         const savedReview: Review = await response.json();
@@ -134,12 +150,27 @@ export const ReviewProvider: React.FC<{ children: React.ReactNode }> = ({
           [reviewData.productId]: updatedList,
         }));
         updateSummary(reviewData.productId, updatedList);
-        return true;
+        return { success: true };
       }
-    } catch (err) {
+
+      let errorMsg = "Não foi possível enviar a avaliação.";
+      try {
+        const errJson = await response.json();
+        if (errJson?.message) {
+          errorMsg = errJson.message;
+        }
+      } catch (parseErr) {
+        // use default errorMsg
+      }
+
+      return { success: false, error: errorMsg };
+    } catch (err: any) {
       console.error("Erro ao enviar avaliação:", err);
+      return {
+        success: false,
+        error: err?.message || "Erro de conexão ao enviar avaliação.",
+      };
     }
-    return false;
   };
 
   const getReviewSummary = (productId: number): ReviewSummary => {

@@ -6,6 +6,7 @@ import {
   faClock,
   faCopy,
   faExternalLinkAlt,
+  faStar,
   faTimesCircle,
 } from "@fortawesome/free-solid-svg-icons";
 
@@ -505,6 +506,34 @@ const StatusPagamento: React.FC = () => {
                     <h4>{product.titulo}</h4>
                     <p>R$ {Number(product.preco).toFixed(2)}</p>
                   </div>
+                  {isApproved && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/product/${product.id}`);
+                      }}
+                      style={{
+                        marginLeft: "auto",
+                        padding: "6px 14px",
+                        backgroundColor: "#fef3c7",
+                        color: "#92400e",
+                        border: "1px solid #fde68a",
+                        borderRadius: "9999px",
+                        fontSize: "0.75rem",
+                        fontWeight: 700,
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
+                        transition: "all 0.2s",
+                      }}
+                    >
+                      <FontAwesomeIcon icon={faStar} style={{ color: "#d97706" }} />
+                      Avaliar Produto
+                    </button>
+                  )}
                 </div>
               ))
             ) : (
