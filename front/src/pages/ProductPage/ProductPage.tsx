@@ -26,7 +26,10 @@ const ProductPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showErrorMessage, setsShowErrorMessage] = useState(false);
-  const [showOkMessage, setsShowOkMessage] = useState(false);
+  const [feedbackMessage, setFeedbackMessage] = useState<{
+    text: string;
+    status: string;
+  } | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -82,11 +85,18 @@ const ProductPage: React.FC = () => {
           setCanReview(eligibility.canReview);
           setHasPurchased(eligibility.hasPurchased);
           setHasAlreadyReviewed(eligibility.hasAlreadyReviewed);
+          if (eligibility.canReview && !eligibility.hasAlreadyReviewed) {
+            setShowReviewForm(true);
+          }
         } catch (err) {
           console.error("Erro ao verificar permissões de avaliação:", err);
         } finally {
           setLoadingEligibility(false);
         }
+      } else {
+        setCanReview(false);
+        setHasPurchased(false);
+        setHasAlreadyReviewed(false);
       }
     };
 
@@ -111,8 +121,14 @@ const ProductPage: React.FC = () => {
     if (!user) return setsShowErrorMessage(true);
     if (product) {
       const status = await addToCart(product);
-      if (status === "ok") setsShowOkMessage(true);
-      else setsShowErrorMessage(true);
+      if (status === "ok") {
+        setFeedbackMessage({
+          text: "Produto adicionado ao carrinho!",
+          status: "ok",
+        });
+      } else {
+        setsShowErrorMessage(true);
+      }
     }
   };
 
@@ -120,7 +136,7 @@ const ProductPage: React.FC = () => {
     e.preventDefault();
     if (!newComment.trim() || !product) return;
 
-    const success = await addReview({
+    const res = await addReview({
       productId: product.id,
       userId: user?.id ? Number(user.id) : 1,
       userName: user?.name || user?.email?.split("@")[0] || "Cliente NexGen",
@@ -130,13 +146,16 @@ const ProductPage: React.FC = () => {
       verifiedPurchase: true,
     });
 
-    if (success) {
+    if (res.success) {
       const updated = await fetchReviewsByProduct(product.id);
       setReviews(updated as unknown as Review[]);
       setNewComment("");
       setImagePreview(null);
       setShowReviewForm(false);
-      setsShowOkMessage(true);
+      setFeedbackMessage({
+        text: "Avaliação publicada com sucesso!",
+        status: "ok",
+      });
 
       // Reavalia a elegibilidade após salvar a nova avaliação
       if (user?.id) {
@@ -146,18 +165,80 @@ const ProductPage: React.FC = () => {
         setHasAlreadyReviewed(eligibility.hasAlreadyReviewed);
       }
     } else {
-      setsShowErrorMessage(true);
+      setFeedbackMessage({
+        text:
+          res.error ||
+          "Você precisa ter comprado este produto para poder avaliá-lo.",
+        status: "error",
+      });
     }
   };
 
+  const MAX_IMAGE_B64_BYTES = 1 * 1024 * 1024; // 1 MB Base64 limit
+
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) return alert("Máximo de 5MB.");
-      const reader = new FileReader();
-      reader.onloadend = () => setImagePreview(reader.result as string);
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    if (file.size > 4 * 1024 * 1024) {
+      setFeedbackMessage({
+        text: "Imagem muito grande. Escolha um arquivo de até 4MB.",
+        status: "error",
+      });
+      e.target.value = "";
+      return;
     }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const originalDataUrl = reader.result as string;
+
+      // Compress via canvas to keep Base64 within DB-safe size
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const MAX_DIM = 800;
+        let { width, height } = img;
+        if (width > MAX_DIM || height > MAX_DIM) {
+          if (width > height) {
+            height = Math.round((height * MAX_DIM) / width);
+            width = MAX_DIM;
+          } else {
+            width = Math.round((width * MAX_DIM) / height);
+            height = MAX_DIM;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          setImagePreview(originalDataUrl);
+          return;
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Try quality 0.8 first; fallback to 0.6 if still too large
+        let compressed = canvas.toDataURL("image/jpeg", 0.8);
+        if (compressed.length > MAX_IMAGE_B64_BYTES) {
+          compressed = canvas.toDataURL("image/jpeg", 0.6);
+        }
+        if (compressed.length > MAX_IMAGE_B64_BYTES) {
+          setFeedbackMessage({
+            text: "A imagem é muito pesada mesmo após compressão. Tente uma imagem menor.",
+            status: "error",
+          });
+          e.target.value = "";
+          return;
+        }
+        setImagePreview(compressed);
+      };
+      img.onerror = () => {
+        // Fallback: use original if canvas fails
+        setImagePreview(originalDataUrl);
+      };
+      img.src = originalDataUrl;
+    };
+    reader.readAsDataURL(file);
   };
 
   if (loading) return <Loading variant="products" />;
@@ -186,8 +267,11 @@ const ProductPage: React.FC = () => {
       {showErrorMessage && (
         <ErrorMessage onClose={() => setsShowErrorMessage(false)} />
       )}
-      {showOkMessage && (
-        <SpanMessage message="Operação realizada com sucesso." status="ok" />
+      {feedbackMessage && (
+        <SpanMessage
+          message={feedbackMessage.text}
+          status={feedbackMessage.status}
+        />
       )}
 
       {/* Lightbox Modal */}
@@ -294,30 +378,37 @@ const ProductPage: React.FC = () => {
             </div>
 
             {/* Controle de Permissões para Avaliar */}
-            {user && !loadingEligibility && (
-              <div>
-                {hasAlreadyReviewed ? (
-                  <span className="inline-flex items-center rounded-full bg-slate-100 px-4 py-2 text-xs font-semibold text-slate-500">
-                    ✓ Você já avaliou este produto
+            <div>
+              {loadingEligibility ? (
+                <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-4 py-2 text-xs font-medium text-slate-500">
+                  <span className="h-2 w-2 animate-ping rounded-full bg-slate-400" />
+                  Verificando permissão...
+                </span>
+              ) : !user || !hasPurchased ? (
+                <div className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-4 py-2 text-xs font-medium text-amber-800 shadow-xs">
+                  <span>Compre este produto para poder deixar sua avaliação.</span>
+                </div>
+              ) : hasAlreadyReviewed ? (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-4 py-2 text-xs font-semibold text-slate-600">
+                  ✓ Você já avaliou este produto
+                </span>
+              ) : canReview ? (
+                <button
+                  type="button"
+                  onClick={() => setShowReviewForm(!showReviewForm)}
+                  className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 active:scale-95"
+                >
+                  <FontAwesomeIcon icon={faStar} className="text-amber-400 text-xs" />
+                  <span>
+                    {showReviewForm ? "Ocultar Formulário" : "Avaliar Produto"}
                   </span>
-                ) : (
-                  hasPurchased && (
-                    <button
-                      onClick={() => setShowReviewForm(!showReviewForm)}
-                      className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
-                    >
-                      {showReviewForm
-                        ? "Cancelar Avaliação"
-                        : "Escrever Avaliação"}
-                    </button>
-                  )
-                )}
-              </div>
-            )}
+                </button>
+              ) : null}
+            </div>
           </div>
 
           {/* Renderização do Formulário se Elegível */}
-          {showReviewForm && canReview && (
+          {hasPurchased && canReview && showReviewForm && (
             <ReviewForm
               newRating={newRating}
               setNewRating={setNewRating}
